@@ -1,0 +1,70 @@
+# Navien NR remote bus as an ESPHome package. Works on any platform that ESPHome's
+# remote_receiver / remote_transmitter support: ESP32 (all models), ESP8266, RP2040, LibreTiny.
+# Use it on a dedicated board (see navien-remote.yaml) or add it to an existing device:
+#
+#   external_components:
+#     - source: github://<you>/navien-esphome
+#       components: [navien_2wire]
+#
+#   packages:
+#     navien: github://<you>/navien-esphome/example/navien-package.yaml   # or: !include navien-package.yaml
+#
+#   substitutions:            # required: the two GPIOs wired to the interface board
+#     navien_rx_pin: GPIO4
+#     navien_tx_pin: GPIO5
+#
+# Both must be the chip's own GPIOs (an I2C/SPI port expander pin is rejected).
+# On ESP32 you may add `non_blocking: true` to the transmitter (ESP32-only option).
+
+remote_receiver:
+  - id: navien_rx
+    pin:
+      number: ${navien_rx_pin}
+      inverted: true             # the H11L1 pulls RX low while the heater sends
+    idle: 4ms
+    filter: 100us
+    tolerance: 35%
+    dump: []
+
+remote_transmitter:
+  - id: navien_tx
+    pin: ${navien_tx_pin}
+    carrier_duty_percent: 100%
+
+navien_2wire:
+  receiver_id: navien_rx
+  transmitter_id: navien_tx
+
+sensor:
+  - platform: navien_2wire
+    outlet_temperature:
+      name: Navien outlet temperature
+    inlet_temperature:
+      name: Navien inlet temperature
+    frames_bad:
+      name: Navien bad frames
+
+binary_sensor:
+  - platform: navien_2wire
+    burner:
+      name: Navien burner
+    pump:
+      name: Navien recirculation pump
+    demand:
+      name: Navien hot water demand
+    heater_link:
+      name: Navien heater link
+
+switch:
+  - platform: navien_2wire
+    power:
+      id: navien_power         # IDs used by navien-failsafe.yaml
+      name: Navien power
+    preheat:
+      id: navien_preheat
+      name: Navien preheat
+
+number:
+  - platform: navien_2wire
+    setpoint:
+      name: Navien setpoint

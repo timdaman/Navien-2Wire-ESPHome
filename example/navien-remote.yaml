@@ -1,0 +1,35 @@
+# A dedicated ESP32 for the Navien bus. All the Navien parts come from
+# navien-package.yaml, which can also be added to an existing device instead.
+substitutions:
+  name: navien-remote
+  friendly_name: Navien
+  # classic ESP32 (ESP32-DevKitC); see navien-package.yaml for the defaults used on an ESP32-S3
+  navien_rx_pin: GPIO34
+  navien_tx_pin: GPIO25
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+api:
+ota:
+  - platform: esphome
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  - source:
+      type: local          # or: github://<you>/navien-esphome
+      path: ../components
+    components: [navien_2wire]
+
+packages:
+  navien: !include navien-package.yaml
+  navien_failsafe: !include navien-failsafe.yaml   # optional: operating mode + fail-safes

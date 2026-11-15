@@ -1,0 +1,116 @@
+# Optional add-on to navien-package.yaml: an operating-mode select with fail-safes, so the
+# heater keeps working sensibly when Home Assistant is down. Include it after the main package:
+#
+#   packages:
+#     navien: !include navien-package.yaml
+#     navien_failsafe: !include navien-failsafe.yaml
+#
+# It uses the switch IDs navien_power and navien_preheat set in navien-package.yaml.
+#
+# Navien operating mode (saved in flash):
+#   Off            heater power off
+#   On             power on, preheat off
+#   On + preheat   power on, preheat on
+#   Auto           power on; Home Assistant controls preheat while it's connected,
+#                  otherwise it behaves like "On + preheat"
+#
+# Fail-safes (nothing happens in Off mode):
+#   * 2 minutes after boot: power on, plus preheat in "On + preheat" and "Auto".
+#   * Home Assistant disconnected for 5 minutes: the same.
+#
+# Note: ESPHome counts any API client as "connected", including the dashboard's log viewer.
+# In Auto mode, have your HA automation re-apply preheat when the device comes back online.
+
+select:
+  - platform: template
+    id: navien_operating_mode
+    name: Navien operating mode
+    icon: mdi:water-boiler-auto
+    options: ["Off", "On", "On + preheat", "Auto"]
+    initial_option: "Auto"
+    optimistic: true
+    restore_value: true
+    on_value:
+      - script.execute:
+          id: navien_apply_mode
+          failsafe: false
+
+globals:
+  - id: navien_ha_offline_s   # seconds since Home Assistant was last connected
+    type: int
+    initial_value: "0"
+
+script:
+  # failsafe = false: a mode was just chosen. In Auto, preheat is left to Home Assistant.
+  # failsafe = true:  boot or lost Home Assistant. Auto then behaves like "On + preheat",
+  #                   and Off leaves everything as it is.
+  - id: navien_apply_mode
+    mode: queued
+    parameters:
+      failsafe: bool
+    # Option indexes: 0 Off, 1 On, 2 On + preheat, 3 Auto.
+    then:
+      - if:
+          condition:
+            lambda: return id(navien_operating_mode).active_index() == 0;   # Off
+          then:
+            - if:
+                condition:
+                  lambda: return !failsafe;
+                then:
+                  - logger.log:
+                      tag: navien_mode
+                      format: "Mode Off: power off"
+                  - switch.turn_off: navien_preheat
+                  - switch.turn_off: navien_power
+          else:
+            - switch.turn_on: navien_power
+            - if:
+                condition:
+                  lambda: return id(navien_operating_mode).active_index() == 1;   # On
+                then:
+                  - switch.turn_off: navien_preheat
+            - if:
+                condition:
+                  lambda: |-
+                    return id(navien_operating_mode).active_index() == 2   // On + preheat
+                        || failsafe;                                        // Auto: only as a fail-safe
+                then:
+                  - switch.turn_on: navien_preheat
+            - logger.log:
+                tag: navien_mode
+                format: "Mode applied%s: power on, preheat %s"
+                args: ['failsafe ? " (fail-safe)" : ""', 'id(navien_preheat).state ? "on" : "off"']
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - delay: 2min
+      - script.execute:
+          id: navien_apply_mode
+          failsafe: true
+
+interval:
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            api.connected:
+          then:
+            - globals.set:
+                id: navien_ha_offline_s
+                value: "0"
+          else:
+            - lambda: id(navien_ha_offline_s) += 10;
+            - if:
+                condition:
+                  lambda: return id(navien_ha_offline_s) == 300;  # fires once per outage
+                then:
+                  - logger.log:
+                      level: WARN
+                      tag: navien_mode
+                      format: "Home Assistant gone for 5 minutes: applying fail-safe"
+                  - script.execute:
+                      id: navien_apply_mode
+                      failsafe: true

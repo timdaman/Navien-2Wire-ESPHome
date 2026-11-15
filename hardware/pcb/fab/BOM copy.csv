@@ -1,0 +1,18 @@
+Reference,Qty,Value,Part,Footprint,Notes
+U1,1,H11L1,H11L1M (onsemi) or equivalent,DIP-6 7.62 mm,Schmitt-trigger optocoupler. Pin 1 dot toward J1 side top
+U2,1,PC817,Sharp/Everlight PC817 or equivalent,DIP-4 7.62 mm,Pin 1 at bottom-right (ESP side)
+Q1,1,2N3904,2N3904 TO-92,TO-92 inline wide (2.54 mm),Flat face per silkscreen
+D1,1,1N4732A,4.7 V 1 W zener,DO-41,Band = K toward the K mark
+D2,1,1N4744A,15 V 1 W zener,DO-41,Band = K toward the K mark
+D3,1,P6KE24CA,24 V bidirectional TVS,DO-15,Either orientation
+F1,1,0ZRE0005FF,Bel Fuse 0ZRE0005FF PTC 50 mA hold,Radial 5.1 mm,
+R1,1,47,47 ohm 1/4 W,Axial 10.16 mm,
+R2,1,82 1%,82 ohm 1% 1/4 W,Axial 10.16 mm,Sense resistor
+R3,1,10k,10 kohm 1/4 W,Axial 10.16 mm,
+R4,1,330,330 ohm 1/4 W,Axial 10.16 mm,
+R5,1,4.7k,4.7 kohm 1/4 W,Axial 10.16 mm,
+R6,1,220,220 ohm 1/4 W,Axial 10.16 mm,
+C1,1,100n,100 nF ceramic,Disc 2.5 mm,
+J1,1,VH pigtail,Premade JST VH 3.96 mm 2-pin FEMALE pigtail (VHR-2N housing with leads),Solder pads + strain relief,20-22 AWG leads. Feed each lead up through the large relief hole then solder into its pad. A+ to the wire on CN12's right pin (latch down)
+J2,1,1x04 header,2.54 mm pin header 1x4,2.54 mm,Or solder wires
+—,1,ESPHome board,ESP32 (any variant) / ESP8266 / RP2040 dev board,—,Wire 3V3/RX/TX/GND to J2 with jumper wires; can be an existing device

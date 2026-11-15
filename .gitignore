@@ -1,0 +1,13 @@
+# ESPHome build output and secrets
+.esphome/
+secrets.yaml
+# local builds / test binaries
+test_codec
+__pycache__/
+# raw oscilloscope captures are not published
+*.npy
+*.npz
+# KiCad local/backup files
+*.kicad_prl
+*-backups/
+fp-info-cache
