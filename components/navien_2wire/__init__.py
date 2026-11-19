@@ -13,7 +13,8 @@
 import esphome.codegen as cg
 from esphome.components import remote_base
 import esphome.config_validation as cv
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_INVERTED, CONF_PIN
+import esphome.final_validate as fv
 
 CODEOWNERS = []
 # ESPHome refuses to build unless these components are also in the YAML.
@@ -56,6 +57,37 @@ CONFIG_SCHEMA = (
     # ... and the keys every component accepts (e.g. setup_priority).
     .extend(cv.COMPONENT_SCHEMA)
 )
+
+
+# ---- Receiver polarity check (runs while ESPHome validates the YAML, before compiling) ----
+#
+# The interface board's H11L1 pulls RX low while the heater sends, so the pin must be inverted.
+# With the wrong setting every frame fails to decode ("Decode failed: bad timing ..." in the log),
+# so catch it here instead. If you built a different interface circuit with the opposite
+# polarity, change RX_INVERTED to match it.
+RX_INVERTED = True
+
+
+def _check_rx_polarity(config):
+    full = fv.full_config.get()
+    receivers = full.get("remote_receiver", [])
+    if isinstance(receivers, dict):
+        receivers = [receivers]
+    for rx in receivers:
+        if str(rx[CONF_ID]) != str(config["receiver_id"]):
+            continue
+        inverted = rx[CONF_PIN].get(CONF_INVERTED, False)
+        if inverted != RX_INVERTED:
+            raise cv.Invalid(
+                f"navien_2wire: the pin of remote_receiver '{rx[CONF_ID]}' has inverted: "
+                f"{str(inverted).lower()}, but this board needs inverted: {str(RX_INVERTED).lower()}. "
+                f"Set it like this:  pin: {{ number: ..., inverted: {str(RX_INVERTED).lower()} }}"
+            )
+    return config
+
+
+# ESPHome calls this once the whole YAML is known (it needs to see the remote_receiver block).
+FINAL_VALIDATE_SCHEMA = _check_rx_polarity
 
 
 # Generates the C++ for the validated config. Each line becomes one statement in the

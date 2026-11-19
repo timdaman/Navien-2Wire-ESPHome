@@ -144,6 +144,12 @@ int main() {
   Frame bad = f; bad.b[3] ^= 0x01;   // one data bit flipped, parity now wrong
   CHECK(decode(encode(bad), g) == BAD_PARITY, "parity error not detected");
 
+  // Setpoint rounding: 98-140 °F, 1 °F steps to 120, then 5 °F steps.
+  const int sp[][2] = {{0, 98}, {97, 98}, {98, 98}, {119, 119}, {120, 120}, {122, 120},
+                       {123, 125}, {127, 125}, {128, 130}, {140, 140}, {141, 140}, {255, 140}};
+  for (auto &c : sp)
+    CHECK(valid_setpoint(c[0]) == c[1], "valid_setpoint wrong");
+
   printf("%s (%zu real frames, %zu late-edge frames, 2 x 20000 round trips)\n", failures ? "FAILED" : "all tests passed",
          SAMPLES.size(), LATE_EDGE_SAMPLES.size());
   return failures ? 1 : 0;

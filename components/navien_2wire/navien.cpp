@@ -26,6 +26,7 @@ void NavienComponent::setup() {
   Settings loaded;
   if (this->pref_.load(&loaded))
     this->settings_ = loaded;
+  this->settings_.setpoint = valid_setpoint(this->settings_.setpoint);  // in case the flash holds an old/odd value
   this->publish_controls_();
 }
 
@@ -45,6 +46,7 @@ void NavienComponent::publish_controls_() {
 void NavienComponent::save_() { this->pref_.save(&this->settings_); }
 
 void NavienComponent::set_setpoint(uint8_t deg_f) {
+  deg_f = valid_setpoint(deg_f);  // e.g. 123 from HA becomes 125 (see navien_codec.h)
   this->settings_.setpoint = deg_f;
   this->save_();
   if (this->setpoint_number_ != nullptr)

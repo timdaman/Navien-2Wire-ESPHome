@@ -62,11 +62,40 @@ Every entity is optional. The package enables all the useful ones:
 | `sensor` | `outlet_temperature`, `inlet_temperature`, `status_raw`, `register_d3`, `frames_ok`, `frames_bad` |
 | `binary_sensor` | `burner`, `pump`, `demand`, `heater_link` |
 | `switch` | `power`, `preheat` |
-| `number` | `setpoint` (`min_value` / `max_value`, default 100–120 °F) |
+| `number` | `setpoint` (`min_value` / `max_value`, default 98–140 °F; the steps aren't even, see [Setpoint steps](#setpoint-steps)) |
 
 The board is the bus master: it starts polling the heater as soon as it boots, like the original remote. Setpoint, power and preheat are saved in flash
 (defaults on first boot: 120 °F, power on, preheat off).
 Heater does not transmit it's internal settings so set point, power and preheat status are managed blindly. Heater reports measured values; burner status, demand, and internal temperatures.
+
+### Setpoint steps
+
+The setpoint doesn't go up in even steps. Like the original remote, it moves **1 °F at a time up to 120 °F, then 5 °F at a time**:
+
+| Range | Step | Values the heater can be sent |
+|---|---|---|
+| 98–120 °F | 1 °F | 98, 99, 100, … 119, 120 |
+| 120–140 °F | 5 °F | 125, 130, 135, 140 |
+
+Home Assistant's slider still moves 1 °F at a time across the whole range, because an ESPHome number can only have one step size.
+When you pick a value between the 5 °F steps, the board rounds it to the nearest valid one, sends that, and the slider jumps to it:
+
+| You set | Heater gets |
+|---|---|
+| 121 or 122 | 120 |
+| 123 to 127 | 125 |
+| 128 to 132 | 130 |
+| 133 to 137 | 135 |
+| 138 to 140 | 140 |
+
+An automation that sets, say, 124 °F will see the setpoint read back as 125 °F. Use one of the values in the first table to avoid that.
+
+Two more limits:
+
+* **DIP switches 7/8 on the heater board cap the maximum** at 110, 120, 130 or 140 °F. The heater doesn't report this cap over the bus,
+  so if you set a setpoint above it, HA shows your value but the heater quietly uses its cap. Check the switches (power off first)
+  and set `max_value` to match, so HA only offers what the heater will actually do.
+* **Water above 125 °F can scald.** Set `max_value` lower if that's a concern.
 
 ### Fail-safes and operating mode (optional)
 

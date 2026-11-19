@@ -91,6 +91,24 @@ inline Frame make_master(uint8_t flags, uint8_t reg, uint8_t d_hi, uint8_t d_lo)
   return f;
 }
 
+// ---- Setpoint values the heater accepts ------------------------------------------------
+// Navien's remotes for non-condensing heaters cover 98-140 °F. The original NR-210A remote steps
+// 1 °F up to 120 °F and then 5 °F (119 -> 120 -> 125 was seen on the bus), so above 120 only
+// 125, 130, 135 and 140 are sent. DIP switches 7/8 on the heater board can cap the maximum
+// lower (110/120/130/140 °F); the heater doesn't report its cap, so the board can't see it.
+static const uint8_t SETPOINT_MIN_F = 98;
+static const uint8_t SETPOINT_MAX_F = 140;
+static const uint8_t SETPOINT_FINE_MAX_F = 120;  // 1 °F steps up to here, 5 °F steps above
+
+// Turns any requested temperature into the nearest one the original remote could send:
+// clamped to 98-140 °F, and rounded to a multiple of 5 above 120 °F (122 -> 120, 123 -> 125).
+inline uint8_t valid_setpoint(int deg_f) {
+  if (deg_f < SETPOINT_MIN_F) return SETPOINT_MIN_F;
+  if (deg_f > SETPOINT_MAX_F) return SETPOINT_MAX_F;
+  if (deg_f > SETPOINT_FINE_MAX_F) deg_f = (deg_f + 2) / 5 * 5;
+  return (uint8_t) deg_f;
+}
+
 // Why decode() rejected a burst of pulses. Each check runs in this order, and the first one
 // that fails is returned:
 //   BAD_TIMING      an edge is too far from the 500 us grid, or a pulse is too short/long

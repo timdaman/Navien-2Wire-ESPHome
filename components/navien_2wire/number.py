@@ -20,9 +20,10 @@ CONFIG_SCHEMA = cv.Schema(
             icon="mdi:thermometer-water",
         ).extend(
             {
-                # Only the range observed on the original remote is allowed by default.
-                cv.Optional(CONF_MIN_VALUE, default=100): cv.int_range(min=95, max=140),
-                cv.Optional(CONF_MAX_VALUE, default=120): cv.int_range(min=95, max=140),
+                # Full range of the heater (98-140 °F). Above 120 °F the component rounds to 5 °F steps
+                # (see valid_setpoint in navien_codec.h). Narrow it here to limit what HA offers.
+                cv.Optional(CONF_MIN_VALUE, default=98): cv.int_range(min=98, max=140),
+                cv.Optional(CONF_MAX_VALUE, default=140): cv.int_range(min=98, max=140),
             }
         ),
     }

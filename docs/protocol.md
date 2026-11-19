@@ -44,7 +44,7 @@ Two wires, A (+) and B (−), on the heater board's **CN12 `Remote_Controller`**
 
 | Reg | Direction | Bytes 2–3 | Meaning |
 |---|---|---|---|
-| `0x38` | remote writes | `AA tt` | **Setpoint, °F** (tt = 118, 119, 120, 125 seen). `AA` is constant |
+| `0x38` | remote writes | `AA tt` | **Setpoint, °F** (tt = 118, 119, 120, 125 seen). `AA` is constant. Range 98–140 °F *(from Navien's manuals)*; 1 °F steps up to 120, then 5 °F |
 | `0xC8` | remote writes | `ff 00` | **Mode flags**: bit 7 = power on, bit 6 = always 1 *(meaning unknown)*, bit 5 = **preheat active now** |
 | `0x1A` | heater replies | `AA tt` | **Outlet temperature, °F** |
 | `0x96` | heater replies | `AA tt` | **Inlet temperature, °F** |
@@ -71,7 +71,7 @@ remote: 00 00 00 00    read status            heater: C0 00 00 88   pump + burne
 
 ## Open questions
 
-* The setpoint range and step rules (remote steps 119 → 120 → 125).
+* The setpoint range and step rules. The remote steps 119 → 120 → 125, and Navien's manuals give 98–140 °F, with DIP switches 7/8 on the NR-180A/210A/240A capping it at 110/120/130/140 °F. Not tested: what the heater does with an odd value above 120 or one above its DIP cap.
 * Bit 6 of 0xC8, register 0xD3, and the `AA` byte.
 * Where error codes appear (probably the high byte of 0x00).
 * Whether other NR / NP models use the same bus.

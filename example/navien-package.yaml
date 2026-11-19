@@ -68,3 +68,8 @@ number:
   - platform: navien_2wire
     setpoint:
       name: Navien setpoint
+      # 98-140 °F. 1 °F steps up to 120 °F, then 5 °F steps (125, 130, 135, 140); values in
+      # between are rounded to the nearest step (README, "Setpoint steps").
+      # Set max_value to match the heater's DIP switch 7/8 cap (110, 120, 130 or 140 °F):
+      # min_value: 98
+      # max_value: 140
